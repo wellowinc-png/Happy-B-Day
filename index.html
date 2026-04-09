@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подарок для Кати</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #ffe6fa;
+            --env-bg: #d6b987;
+            --env-inside: #c2a370;
+            --env-flap: #e6cda3;
+            --env-bottom: #dfc494;
+            --paper: #f9f5eb;
+            --text-color: #333;
+            --seal-color: #9b1b1b;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #fdfbfb 100%);
+            font-family: 'Caveat', cursive;
+            overflow: hidden;
+        }
+
+        /* Конверт */
+        .envelope-wrapper {
+            position: relative;
+            width: 320px;
+            height: 220px;
+            cursor: pointer;
+            transition: transform 0.3s, opacity 0.8s, transform 0.8s;
+            z-index: 10;
+        }
+
+        .envelope-wrapper:hover {
+            transform: scale(1.05);
+        }
+
+        .envelope-wrapper.opened {
+            transform: translateY(100px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .env-back {
+            position: absolute;
+            inset: 0;
+            background: var(--env-inside);
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .env-bottom {
+            position: absolute;
+            inset: 0;
+            background: var(--env-bottom);
+            clip-path: polygon(0 100%, 50% 45%, 100% 100%);
+            z-index: 4;
+        }
+
+        .env-left {
+            position: absolute;
+            inset: 0;
+            background: var(--env-bg);
+            clip-path: polygon(0 0, 50% 45%, 0 100%);
+            z-index: 3;
+        }
+
+        .env-right {
+            position: absolute;
+            inset: 0;
+            background: var(--env-bg);
+            clip-path: polygon(100% 0, 50% 45%, 100% 100%);
+            z-index: 3;
+        }
+
+        .env-top {
+            position: absolute;
+            inset: 0;
+            background: var(--env-flap);
+            clip-path: polygon(0 0, 100% 0, 50% 55%);
+            transform-origin: top;
+            transition: transform 0.6s ease-in-out;
+            z-index: 5;
+        }
+
+        .envelope-wrapper.flap-open .env-top {
+            transform: rotateX(180deg);
+        }
+
+        /* Восковая печать */
+        .seal {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: var(--seal-color);
+            border-radius: 50%;
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
+            border: 2px solid #7a1515;
+            transition: transform 0.4s, opacity 0.4s;
+        }
+
+        .envelope-wrapper.flap-open .seal {
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+        }
+
+        .seal svg {
+            width: 28px;
+            height: 28px;
+            fill: #ffb3b3;
+        }
+
+        /* Письмо */
+        .letter-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            background: var(--paper);
+            border-radius: 4px;
+            z-index: 2;
+            transition: all 0.8s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .letter-container.extracted {
+            position: fixed;
+            top: 10vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vw;
+            max-width: 650px;
+            height: 80vh;
+            z-index: 50;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            perspective: 2000px;
+        }
+
+        .letter-flipper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s ease-in-out;
+        }
+
+        .letter-container.flipped .letter-flipper {
+            transform: rotateY(180deg);
+        }
+
+        .letter-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        
+        .letter-face::-webkit-scrollbar {
+            display: none;
+        }
+
+        .letter-back {
+            transform: rotateY(180deg);
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .text-content {
+            font-size: 28px;
+            line-height: 1.4;
+            color: var(--text-color);
+            white-space: pre-wrap;
+            flex-grow: 1;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: var(--text-color);
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Кнопка переворота */
+        .flip-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            background: rgba(249, 245, 235, 0.85);
+            padding: 10px 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+        }
+
+        .flip-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .flip-text {
+            font-size: 24px;
+            color: #666;
+            transition: color 0.3s;
+        }
+
+        .flip-btn:hover .flip-text {
+            color: #222;
+        }
+
+        .pulse-circle {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulse-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #ff6b6b;
+            border-radius: 50%;
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+            opacity: 0.75;
+        }
+
+        .pulse-dot {
+            position: relative;
+            width: 16px;
+            height: 16px;
+            background: #e03131;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2.2);
+                opacity: 0;
+            }
+        }
+
+        .instruction {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 26px;
+            color: #d64545;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        
+        .envelope-wrapper.flap-open .instruction {
+            opacity: 0;
+        }
+
+        @media (max-width: 600px) {
+            .text-content { font-size: 22px; }
+            .letter-container.extracted { width: 95vw; padding: 10px; }
+            .letter-face { padding: 25px; }
+            .flip-text { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="envelope-wrapper" id="envelope">
+        <div class="env-back"></div>
+        
+        <div class="letter-container" id="letter">
+            <div class="letter-flipper">
+                <div class="letter-face letter-front">
+                    <div class="text-content" id="front-text"></div>
+                    
+                    <div class="flip-btn" id="flip-btn">
+                        <span class="flip-text">Нажми, чтобы перевернуть)</span>
+                        <div class="pulse-circle">
+                            <div class="pulse-bg"></div>
+                            <div class="pulse-dot"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="letter-face letter-back">
+                    <div class="text-content" id="back-text"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="env-left"></div>
+        <div class="env-right"></div>
+        <div class="env-bottom"></div>
+        <div class="env-top"></div>
+        
+        <!-- Печать с сердечком -->
+        <div class="seal">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+        </div>
+        <div class="instruction">Нажми на письмо...</div>
+    </div>
+
+    <script>
+        const envelope = document.getElementById('envelope');
+        const letter = document.getElementById('letter');
+        const frontTextEl = document.getElementById('front-text');
+        const backTextEl = document.getElementById('back-text');
+        const flipBtn = document.getElementById('flip-btn');
+
+        const fullFrontText = `Дорогая Катя, я нахожусь на большом расстоянии от тебя, но это не препятствие для того, чтобы поздравить тебя! Я бы мог пожелать тебе здоровья, счастья, но я не люблю говорить пожелания. Я бы хотел дать тебе то, что помогало мне всю мою жизнь. Совет.\n\n«Расставляй приоритеты так, как ты думаешь, а не как другие.»\n\nЭто бывает сложно понять, но ты должна правильно расставить приоритеты: что тебе более важно. Тогда, и только тогда, тебе откроется дорога к твоей мечте.\n\nЯ очень рад, что ты у меня есть, отпразднуй этот День Рождения как никогда лучше) <3.`;
+        
+        const fullBackText = `Мой маленький подарок уже лежит на твоем счете в банке :>`;
+
+        let isOpened = false;
+        let isFlipped = false;
+
+        // Функция для эффекта печатания текста
+        function typeText(element, text, speed, callback) {
+            let i = 0;
+            element.innerHTML = '<span class="cursor"></span>';
+            
+            const timer = setInterval(() => {
+                const currentText = text.substring(0, i + 1);
+                element.innerHTML = currentText + '<span class="cursor"></span>';
+                i++;
+                if (i >= text.length) {
+                    clearInterval(timer);
+                    element.innerHTML = text; // убираем курсор в конце
+                    if (callback) callback();
+                }
+            }, speed);
+        }
+
+        // Логика открытия конверта
+        envelope.addEventListener('click', () => {
+            if (isOpened) return;
+            isOpened = true;
+
+            // 1. Открываем верхнюю часть и прячем печать
+            envelope.classList.add('flap-open');
+
+            // 2. Достаем письмо
+            setTimeout(() => {
+                envelope.classList.add('opened'); // Конверт уезжает вниз
+                letter.classList.add('extracted'); // Письмо увеличивается
+                
+                // Переносим письмо в body, чтобы оно было поверх всего
+                document.body.appendChild(letter);
+                
+                // 3. Начинаем печатать текст
+                setTimeout(() => {
+                    typeText(frontTextEl, fullFrontText, 25, () => {
+                        // Показываем кнопку переворота после завершения печати
+                        setTimeout(() => {
+                            flipBtn.classList.add('visible');
+                        }, 500);
+                    });
+                }, 800);
+
+            }, 600);
+        });
+
+        // Логика переворота письма
+        flipBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isFlipped) return;
+            isFlipped = true;
+            
+            flipBtn.classList.remove('visible');
+            letter.classList.add('flipped');
+
+            // Печатаем текст на обратной стороне после анимации переворота
+            setTimeout(() => {
+                typeText(backTextEl, fullBackText, 50);
+            }, 800);
+        });
+    </script>
+</body>
+</html>
